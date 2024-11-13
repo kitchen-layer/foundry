@@ -60,5 +60,8 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["time", "macros"] }
 tracing.workspace = true
 
+# kitchen layer
+kitchen-precompiles = { git = "ssh://git@github.com/Quertyy/op-stateful-precompiles.git", branch = "main" }
+
 [dev-dependencies]
 foundry-test-utils.workspace = true

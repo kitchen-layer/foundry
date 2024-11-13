@@ -1,6 +1,6 @@
 pub use crate::ic::*;
 use crate::{
-    backend::DatabaseExt, constants::DEFAULT_CREATE2_DEPLOYER, precompiles::ALPHANET_P256,
+    backend::DatabaseExt, constants::DEFAULT_CREATE2_DEPLOYER, precompiles::{ALPHANET_P256, RANDOM_ADDRESS},
     InspectorExt,
 };
 use alloy_json_abi::{Function, JsonAbi};
@@ -18,11 +18,12 @@ use revm::{
         return_ok, CallInputs, CallOutcome, CallScheme, CallValue, CreateInputs, CreateOutcome,
         Gas, InstructionResult, InterpreterResult,
     },
-    primitives::{CreateScheme, EVMError, HandlerCfg, SpecId, KECCAK_EMPTY},
+    precompile::PrecompileWithAddress,
+    primitives::{CreateScheme, EVMError, HandlerCfg, Precompile, SpecId, KECCAK_EMPTY},
     FrameOrResult, FrameResult,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
-
+use kitchen_precompiles::random::RandomStatefulPrecompile;
 pub use revm::primitives::EvmState as StateChangeset;
 
 /// Depending on the configured chain id and block number this should apply any specific changes
@@ -278,6 +279,19 @@ pub fn alphanet_handler_register<EXT, DB: revm::Database>(handler: &mut EvmHandl
     });
 }
 
+pub fn random_handler_register<EXT, DB: revm::Database>(handler: &mut EvmHandler<'_, EXT, DB>) {
+    let prev = handler.pre_execution.load_precompiles.clone();
+    let random = Arc::new(RandomStatefulPrecompile);
+    let random_precompile = PrecompileWithAddress(RANDOM_ADDRESS, Precompile::Stateful(random));
+    handler.pre_execution.load_precompiles = Arc::new(move || {
+        let mut loaded_precompiles = prev();
+
+        loaded_precompiles.extend([random_precompile.clone()]);
+
+        loaded_precompiles
+    });
+}
+
 /// Creates a new EVM with the given inspector.
 pub fn new_evm_with_inspector<'evm, 'i, 'db, I: InspectorExt + ?Sized>(
     db: &'db mut dyn DatabaseExt,
@@ -305,7 +319,7 @@ pub fn new_evm_with_inspector<'evm, 'i, 'db, I: InspectorExt + ?Sized>(
         handler.append_handler_register_plain(alphanet_handler_register);
     }
     handler.append_handler_register_plain(create2_handler_register);
-
+    handler.append_handler_register_plain(random_handler_register);
     let context = revm::Context::new(revm::EvmContext::new_with_env(db, env), inspector);
 
     revm::Evm::new(context, handler)
@@ -323,7 +337,7 @@ pub fn new_evm_with_existing_context<'a>(
         handler.append_handler_register_plain(alphanet_handler_register);
     }
     handler.append_handler_register_plain(create2_handler_register);
-
+    handler.append_handler_register_plain(random_handler_register);
     let context =
         revm::Context::new(revm::EvmContext { inner, precompiles: Default::default() }, inspector);
     revm::Evm::new(context, handler)

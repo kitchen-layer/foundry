@@ -47,12 +47,13 @@ pub const PRECOMPILES: &[Address] = &[
     BLAKE_2F,
     POINT_EVALUATION,
     ALPHANET_P256_ADDRESS,
+    RANDOM_ADDRESS,
 ];
 
 /// [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212) secp256r1 precompile address on Alphanet.
 ///
 /// <https://github.com/paradigmxyz/alphanet/blob/5b675ee2b5214f157a62aee2b28fc7ca73e23561/crates/precompile/src/addresses.rs#L3>
-pub const ALPHANET_P256_ADDRESS: Address = address!("0000000000000000000000000000000000000014");
+pub const ALPHANET_P256_ADDRESS: Address = address!("0000000000000000000000000000000000000016");
 
 /// Wrapper around revm P256 precompile, matching EIP-7212 spec.
 ///
@@ -71,3 +72,5 @@ pub fn p256_verify(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 /// [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212#specification) secp256r1 precompile.
 pub const ALPHANET_P256: PrecompileWithAddress =
     PrecompileWithAddress(ALPHANET_P256_ADDRESS, Precompile::Standard(p256_verify));
+
+pub const RANDOM_ADDRESS: Address = address!("0000000000000000000000000000000000000014");

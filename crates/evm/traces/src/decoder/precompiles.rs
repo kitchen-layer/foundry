@@ -2,8 +2,7 @@ use crate::{CallTrace, DecodedCallData};
 use alloy_primitives::{hex, B256, U256};
 use alloy_sol_types::{abi, sol, SolCall};
 use foundry_evm_core::precompiles::{
-    BLAKE_2F, EC_ADD, EC_MUL, EC_PAIRING, EC_RECOVER, IDENTITY, MOD_EXP, POINT_EVALUATION,
-    RIPEMD_160, SHA_256,
+    BLAKE_2F, EC_ADD, EC_MUL, EC_PAIRING, EC_RECOVER, IDENTITY, MOD_EXP, POINT_EVALUATION, RANDOM_ADDRESS, RIPEMD_160, SHA_256
 };
 use itertools::Itertools;
 use revm_inspectors::tracing::types::DecodedCallTrace;
@@ -33,6 +32,7 @@ interface Precompiles {
     /* 0x08 */ function ecpairing(EcPairingInput[] input) returns (bool success);
     /* 0x09 */ function blake2f(uint32 rounds, uint64[8] h, uint64[16] m, uint64[2] t, bool f) returns (uint64[8] h);
     /* 0x0a */ function pointEvaluation(bytes32 versionedHash, bytes32 z, bytes32 y, bytes1[48] commitment, bytes1[48] proof) returns (bytes value);
+    /* 0x14 */ function createRandom(uint8 expectedOutputs) returns (uint256[] memory randomWords);
 }
 }
 use Precompiles::*;
@@ -74,6 +74,7 @@ pub(super) fn decode(trace: &CallTrace, _chain_id: u64) -> Option<DecodedCallTra
         EC_PAIRING => (ecpairingCall::SIGNATURE, tri!(decode_ecpairing(data))),
         BLAKE_2F => (blake2fCall::SIGNATURE, tri!(decode_blake2f(data))),
         POINT_EVALUATION => (pointEvaluationCall::SIGNATURE, tri!(decode_kzg(data))),
+        RANDOM_ADDRESS => (createRandomCall::SIGNATURE, tri!(decode_random(data))),
         _ => return None,
     };
 
@@ -152,6 +153,11 @@ fn decode_kzg(data: &[u8]) -> alloy_sol_types::Result<Vec<String>> {
         hex::encode_prefixed(commitment),
         hex::encode_prefixed(proof),
     ])
+}
+
+fn decode_random(data: &[u8]) -> alloy_sol_types::Result<Vec<String>> {
+    let input_value = abi_decode_call::<createRandomCall>(data)?.1;
+    Ok(vec![input_value.expectedOutputs.to_string()])
 }
 
 fn abi_decode_call<T: SolCall>(data: &[u8]) -> alloy_sol_types::Result<(&'static str, T)> {
