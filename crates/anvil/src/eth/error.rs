@@ -90,10 +90,18 @@ pub enum BlockchainError {
     EIP7702TransactionUnsupportedAtHardfork,
     #[error("op-stack deposit tx received but is not supported.\n\nYou can use it by running anvil with '--optimism'.")]
     DepositTransactionUnsupported,
+    #[error("UnknownTransactionType not supported ")]
+    UnknownTransactionType,
     #[error("Excess blob gas not set.")]
     ExcessBlobGasNotSet,
     #[error("{0}")]
     Message(String),
+}
+
+impl From<eyre::Report> for BlockchainError {
+    fn from(err: eyre::Report) -> Self {
+        Self::Message(err.to_string())
+    }
 }
 
 impl From<RpcError> for BlockchainError {
@@ -463,6 +471,9 @@ impl<T: Serialize> ToRpcResponseResult for Result<T> {
                     RpcError::invalid_params(err.to_string())
                 }
                 err @ BlockchainError::Message(_) => RpcError::internal_error_with(err.to_string()),
+                err @ BlockchainError::UnknownTransactionType => {
+                    RpcError::invalid_params(err.to_string())
+                }
             }
             .into(),
         }
