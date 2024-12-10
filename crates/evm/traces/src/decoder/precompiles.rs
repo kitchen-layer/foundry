@@ -2,7 +2,7 @@ use crate::{CallTrace, DecodedCallData};
 use alloy_primitives::{hex, B256, U256};
 use alloy_sol_types::{abi, sol, SolCall};
 use foundry_evm_core::precompiles::{
-    BLAKE_2F, EC_ADD, EC_MUL, EC_PAIRING, EC_RECOVER, IDENTITY, MOD_EXP, POINT_EVALUATION, RANDOM_ADDRESS, RIPEMD_160, SHA_256
+    BLAKE_2F, EC_ADD, EC_MUL, EC_PAIRING, EC_RECOVER, IDENTITY, MOD_EXP, POINT_EVALUATION, RANDOM_ADDRESS, RIPEMD_160, SHA_256, VESTING_ADDRESS
 };
 use itertools::Itertools;
 use revm_inspectors::tracing::types::DecodedCallTrace;
@@ -33,6 +33,10 @@ interface Precompiles {
     /* 0x09 */ function blake2f(uint32 rounds, uint64[8] h, uint64[16] m, uint64[2] t, bool f) returns (uint64[8] h);
     /* 0x0a */ function pointEvaluation(bytes32 versionedHash, bytes32 z, bytes32 y, bytes1[48] commitment, bytes1[48] proof) returns (bytes value);
     /* 0x14 */ function createRandom(uint8 expectedOutputs) returns (uint256[] memory randomWords);
+    #[derive(Debug)]
+    /* 0x16 */ function createVestingSchedule(address beneficiary, uint256 totalAmount, uint256 cliffDuration, uint256 vestingDuration) external;
+    /* 0x16 */ function calculateVestedAmount(address beneficiary) returns (uint256);
+    /* 0x16 */ function claimVestedTokens() returns (uint256);
 }
 }
 use Precompiles::*;
@@ -53,7 +57,6 @@ pub(super) fn decode(trace: &CallTrace, _chain_id: u64) -> Option<DecodedCallTra
     }
 
     let data = &trace.data;
-
     let (signature, args) = match trace.address {
         EC_RECOVER => {
             let (sig, ecrecoverCall { hash, v, r, s }) = tri!(abi_decode_call(data));
@@ -75,6 +78,7 @@ pub(super) fn decode(trace: &CallTrace, _chain_id: u64) -> Option<DecodedCallTra
         BLAKE_2F => (blake2fCall::SIGNATURE, tri!(decode_blake2f(data))),
         POINT_EVALUATION => (pointEvaluationCall::SIGNATURE, tri!(decode_kzg(data))),
         RANDOM_ADDRESS => (createRandomCall::SIGNATURE, tri!(decode_random(data))),
+        VESTING_ADDRESS => (createVestingScheduleCall::SIGNATURE, tri!(decode_create_vesting(data))),
         _ => return None,
     };
 
@@ -158,6 +162,16 @@ fn decode_kzg(data: &[u8]) -> alloy_sol_types::Result<Vec<String>> {
 fn decode_random(data: &[u8]) -> alloy_sol_types::Result<Vec<String>> {
     let input_value = abi_decode_call::<createRandomCall>(data)?.1;
     Ok(vec![input_value.expectedOutputs.to_string()])
+}
+
+fn decode_create_vesting(data: &[u8]) -> alloy_sol_types::Result<Vec<String>> {
+    let input = abi_decode_call::<createVestingScheduleCall>(data)?.1;
+    Ok(vec![
+        format!("{:?}", input.beneficiary),
+        input.totalAmount.to_string(),
+        input.cliffDuration.to_string(),
+        input.vestingDuration.to_string(),
+    ])
 }
 
 fn abi_decode_call<T: SolCall>(data: &[u8]) -> alloy_sol_types::Result<(&'static str, T)> {

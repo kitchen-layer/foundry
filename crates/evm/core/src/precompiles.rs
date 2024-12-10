@@ -5,7 +5,7 @@ use revm::{
 };
 
 /// The ECRecover precompile address.
-pub const EC_RECOVER: Address = address!("0000000000000000000000000000000000000001");
+pub const EC_RECOVER: Address = address!("000000000000000000000000000000000000000e");
 
 /// The SHA-256 precompile address.
 pub const SHA_256: Address = address!("0000000000000000000000000000000000000002");
@@ -48,12 +48,13 @@ pub const PRECOMPILES: &[Address] = &[
     POINT_EVALUATION,
     ALPHANET_P256_ADDRESS,
     RANDOM_ADDRESS,
+    VESTING_ADDRESS,
 ];
 
 /// [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212) secp256r1 precompile address on Alphanet.
 ///
 /// <https://github.com/paradigmxyz/alphanet/blob/5b675ee2b5214f157a62aee2b28fc7ca73e23561/crates/precompile/src/addresses.rs#L3>
-pub const ALPHANET_P256_ADDRESS: Address = address!("0000000000000000000000000000000000000016");
+pub const ALPHANET_P256_ADDRESS: Address = address!("0000000000000000000000000000000000000025");
 
 /// Wrapper around revm P256 precompile, matching EIP-7212 spec.
 ///
@@ -74,3 +75,4 @@ pub const ALPHANET_P256: PrecompileWithAddress =
     PrecompileWithAddress(ALPHANET_P256_ADDRESS, Precompile::Standard(p256_verify));
 
 pub const RANDOM_ADDRESS: Address = address!("0000000000000000000000000000000000000014");
+pub const VESTING_ADDRESS: Address = address!("0000000000000000000000000000000000000016");

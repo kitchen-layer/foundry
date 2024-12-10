@@ -5607,7 +5607,7 @@ dependencies = [
 [[package]]
 name = "kitchen-precompiles"
 version = "0.0.0"
-source = "git+ssh://git@github.com/Quertyy/op-stateful-precompiles.git?branch=main#c45b3d00f76b68c53ac1004231419a7d42d18c12"
+source = "git+ssh://git@github.com/Quertyy/op-stateful-precompiles.git?branch=main#4d6d86f4764fae023d085240d72ef1633adafa8a"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",

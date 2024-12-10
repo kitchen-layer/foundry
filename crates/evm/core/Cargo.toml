@@ -61,7 +61,7 @@ tokio = { workspace = true, features = ["time", "macros"] }
 tracing.workspace = true
 
 # kitchen layer
-kitchen-precompiles = { git = "ssh://git@github.com/Quertyy/op-stateful-precompiles.git", branch = "main" }
+kitchen-precompiles = { git = "ssh://git@github.com:kitchen-layer/kitchen-node.git", branch = "feat/vesting-precompile" }
 
 [dev-dependencies]
 foundry-test-utils.workspace = true
