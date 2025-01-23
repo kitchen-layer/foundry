@@ -223,7 +223,7 @@ syn-solidity = "0.8.14"
 
 alloy-chains = "0.1"
 alloy-rlp = "0.3"
-alloy-trie = "0.7.0"
+alloy-trie = "0.7.6"
 
 ## op-alloy
 op-alloy-rpc-types = "0.8.0"
@@ -297,6 +297,8 @@ vergen = { version = "8", default-features = false }
 yansi = { version = "1.0", features = ["detect-tty", "detect-env"] }
 
 [patch.crates-io]
+alloy-trie = { git = "https://github.com/alloy-rs/trie", rev = "v0.7.6" }
+solar-interface = { git = "https://github.com/paradigmxyz/solar", rev = "v0.1.0" }
 ## alloy-core
 # alloy-dyn-abi = { path = "../../alloy-rs/core/crates/dyn-abi" }
 # alloy-json-abi = { path = "../../alloy-rs/core/crates/json-abi" }

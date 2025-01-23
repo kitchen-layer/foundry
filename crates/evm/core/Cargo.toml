@@ -63,7 +63,7 @@ tracing.workspace = true
 url.workspace = true
 
 # kitchen layer
-kitchen-precompiles = { git = "ssh://git@github.com/kitchen-layer/kitchen-node.git", branch = "feat/vesting-precompile" }
+kitchen-precompiles = { git = "ssh://git@github.com/kitchen-layer/kitchen-node.git", branch = "dev/node-fix" }
 
 [dev-dependencies]
 foundry-test-utils.workspace = true
