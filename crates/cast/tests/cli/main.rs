@@ -1,9 +1,10 @@
 //! Contains various tests for checking cast commands
 
 use alloy_chains::NamedChain;
-use alloy_network::TransactionResponse;
-use alloy_primitives::{b256, B256};
-use alloy_rpc_types::{BlockNumberOrTag, Index};
+use alloy_network::{TransactionBuilder, TransactionResponse};
+use alloy_primitives::{address, b256, Bytes, B256};
+use alloy_provider::{Provider, ProviderBuilder};
+use alloy_rpc_types::{BlockNumberOrTag, Index, TransactionRequest};
 use anvil::{EthereumHardfork, NodeConfig};
 use foundry_test_utils::{
     casttest, file, forgetest, forgetest_async,
@@ -622,6 +623,46 @@ casttest!(rlp, |_prj, cmd| {
     cmd.cast_fuse();
     cmd.args(["--from-rlp", "0xcbc58455556666c0c0c2c1c0"]).assert_success().stdout_eq(str![[r#"
 [["0x55556666"],[],[],[[[]]]]
+
+"#]]);
+});
+
+// test that `cast impl` works correctly for both the implementation slot and the beacon slot
+casttest!(impl_slot, |_prj, cmd| {
+    let eth_rpc_url = next_http_rpc_endpoint();
+
+    // Call `cast impl` for the implementation slot (AAVE Proxy)
+    cmd.args([
+        "impl",
+        "0x4965f6FA20fE9728deCf5165016fc338a5a85aBF",
+        "--rpc-url",
+        eth_rpc_url.as_str(),
+        "--block",
+        "21422087",
+    ])
+    .assert_success()
+    .stdout_eq(str![[r#"
+0xb61306c8eb34a2104d9eb8d84f1bb1001067fa4b
+
+"#]]);
+});
+
+casttest!(impl_slot_beacon, |_prj, cmd| {
+    let eth_rpc_url = next_http_rpc_endpoint();
+
+    // Call `cast impl` for the beacon slot
+    cmd.args([
+        "impl",
+        "0xc63d9f0040d35f328274312fc8771a986fc4ba86",
+        "--beacon",
+        "--rpc-url",
+        eth_rpc_url.as_str(),
+        "--block",
+        "21422087",
+    ])
+    .assert_success()
+    .stdout_eq(str![[r#"
+0xa748ae65ba11606492a9c57effa0d4b7be551ec2
 
 "#]]);
 });
@@ -1993,5 +2034,39 @@ forgetest_async!(cast_call_custom_chain_id, |_prj, cmd| {
             "--chain",
             &chain_id.to_string(),
         ])
+        .assert_success();
+});
+
+// https://github.com/foundry-rs/foundry/issues/9541
+forgetest_async!(cast_run_impersonated_tx, |_prj, cmd| {
+    let (_api, handle) = anvil::spawn(
+        NodeConfig::test()
+            .with_auto_impersonate(true)
+            .with_eth_rpc_url(Some("https://sepolia.base.org")),
+    )
+    .await;
+
+    let http_endpoint = handle.http_endpoint();
+
+    let provider = ProviderBuilder::new().on_http(http_endpoint.parse().unwrap());
+
+    // send impersonated tx
+    let tx = TransactionRequest::default()
+        .with_from(address!("041563c07028Fc89106788185763Fc73028e8511"))
+        .with_to(address!("F38aA5909D89F5d98fCeA857e708F6a6033f6CF8"))
+        .with_input(
+            Bytes::from_str(
+                "0x60fe47b1000000000000000000000000000000000000000000000000000000000000000c",
+            )
+            .unwrap(),
+        );
+
+    let receipt = provider.send_transaction(tx).await.unwrap().get_receipt().await.unwrap();
+
+    assert!(receipt.status());
+
+    // run impersonated tx
+    cmd.cast_fuse()
+        .args(["run", &receipt.transaction_hash.to_string(), "--rpc-url", &http_endpoint])
         .assert_success();
 });
